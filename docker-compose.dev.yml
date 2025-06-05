@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: nextcrm_db_dev
+    environment:
+      POSTGRES_DB: nextcrm_dev
+      POSTGRES_USER: nextcrm_user
+      POSTGRES_PASSWORD: nextcrm_dev_password
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcrm_user -d nextcrm_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: nextcrm_redis_dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+
+  # Django Backend (Development)
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: nextcrm_backend_dev
+    environment:
+      - DEBUG=True
+      - DJANGO_SETTINGS_MODULE=core.settings.development
+      - SECRET_KEY=dev-secret-key-not-for-production
+      - DB_NAME=nextcrm_dev
+      - DB_USER=nextcrm_user
+      - DB_PASSWORD=nextcrm_dev_password
+      - DB_HOST=db
+      - DB_PORT=5432
+    volumes:
+      - ./backend:/app
+      - /app/venv  # Exclude virtual environment from bind mount
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+        python manage.py migrate &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+
+  # Next.js Frontend (Development)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: nextcrm_frontend_dev
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_APP_NAME=NextCRM
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Exclude node_modules from bind mount
+      - /app/.next  # Exclude .next from bind mount
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    command: npm run dev
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+
+networks:
+  default:
+    name: nextcrm_dev_network

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.env
+
+# Django
+/staticfiles/
+media/
+*.log
+
+# Node / Next.js
+node_modules/
+.next/
+dist/
+*.log
+
+# Docker
+*.pid
+*.db
+docker-compose.override.yml
+
+# VSCode & OS
+.vscode/
+.DS_Store
+Thumbs.db
