@@ -24,8 +24,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . .
 
-# Create logs directory
-RUN mkdir -p logs
+# Create logs directory and file
+RUN mkdir -p logs && touch logs/django.log
 
 # Collect static files
 RUN python manage.py collectstatic --noinput --settings=core.settings.production

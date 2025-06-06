@@ -1,3 +1,4 @@
+import React from 'react'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import apiClient from './api'
@@ -143,9 +144,9 @@ export const requireAuth = () => {
 }
 
 // Route protection helper
-export const withAuth = <T extends Record<string, any>>(
+export function withAuth<T extends Record<string, any>>(
   WrappedComponent: React.ComponentType<T>
-) => {
+) {
   const AuthenticatedComponent = (props: T) => {
     const { isAuthenticated, checkAuth } = useAuthStore()
     
@@ -160,7 +161,7 @@ export const withAuth = <T extends Record<string, any>>(
       return null
     }
 
-    return <WrappedComponent {...props} />
+    return React.createElement(WrappedComponent, props)
   }
 
   AuthenticatedComponent.displayName = `withAuth(${WrappedComponent.displayName || WrappedComponent.name})`
