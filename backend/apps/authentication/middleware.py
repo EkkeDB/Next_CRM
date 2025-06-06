@@ -77,3 +77,29 @@ class AuditLogMiddleware:
             )
         
         return response
+
+
+class CORSAuthMiddleware:
+    """Middleware to ensure CORS headers are present even on auth failures"""
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        
+        # Add CORS headers for authentication failures
+        if response.status_code in [401, 403] and request.path.startswith('/api/'):
+            origin = request.META.get('HTTP_ORIGIN')
+            if origin:
+                # Check if origin is allowed
+                from django.conf import settings
+                allowed_origins = getattr(settings, 'CORS_ALLOWED_ORIGINS', [])
+                allow_all = getattr(settings, 'CORS_ALLOW_ALL_ORIGINS', False)
+                
+                if allow_all or origin in allowed_origins:
+                    response['Access-Control-Allow-Origin'] = origin
+                    response['Access-Control-Allow-Credentials'] = 'true'
+                    response['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+                    response['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-CSRFToken'
+        
+        return response

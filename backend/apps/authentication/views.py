@@ -2,6 +2,7 @@ from rest_framework import status, generics, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.http import JsonResponse
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
@@ -282,5 +283,24 @@ def delete_account(request):
     }, status=status.HTTP_200_OK)
     
     clear_jwt_cookies(response)
+    
+    return response
+
+
+@api_view(['GET', 'OPTIONS'])
+@permission_classes([permissions.AllowAny])
+def test_cors(request):
+    """Test endpoint to verify CORS is working"""
+    response = JsonResponse({
+        'message': 'CORS test successful',
+        'method': request.method,
+        'origin': request.META.get('HTTP_ORIGIN', 'No origin header')
+    })
+    
+    # Manually add CORS headers for testing
+    response['Access-Control-Allow-Origin'] = '*'
+    response['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    response['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    response['Access-Control-Allow-Credentials'] = 'true'
     
     return response

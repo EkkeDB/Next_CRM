@@ -5,7 +5,17 @@
       "Bash(docker compose:*)",
       "Bash(npm install:*)",
       "Bash(find:*)",
-      "Bash(docker logs:*)"
+      "Bash(docker logs:*)",
+      "Bash(sudo docker compose:*)",
+      "Bash(sudo docker ps:*)",
+      "Bash(docker network:*)",
+      "Bash(python manage.py:*)",
+      "Bash(python3 manage.py diffsettings:*)",
+      "Bash(lsof:*)",
+      "Bash(ss:*)",
+      "Bash(sudo fuser:*)",
+      "Bash(curl:*)",
+      "Bash(docker-compose down:*)"
     ],
     "deny": []
   }

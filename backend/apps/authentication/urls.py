@@ -11,4 +11,5 @@ urlpatterns = [
     path('gdpr/consent/', views.GDPRConsentView.as_view(), name='gdpr_consent'),
     path('gdpr/export/', views.UserDataExportView.as_view(), name='user_data_export'),
     path('account/delete/', views.delete_account, name='delete_account'),
+    path('test-cors/', views.test_cors, name='test_cors'),
 ]
