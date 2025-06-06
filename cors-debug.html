@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Debugging Tool</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 { color: #333; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .error { color: #dc3545; }
+        .success { color: #28a745; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+        .log-entry {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .status-200 { border-left: 4px solid #28a745; }
+        .status-400 { border-left: 4px solid #ffc107; }
+        .status-500 { border-left: 4px solid #dc3545; }
+        .status-0 { border-left: 4px solid #6c757d; }
+        pre { white-space: pre-wrap; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 CORS Debugging Tool</h1>
+        <p>This tool helps debug CORS issues between your frontend and backend.</p>
+        
+        <div id="network-info">
+            <h2>Network Information</h2>
+            <div id="network-details"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>CORS Tests</h2>
+        <button onclick="testSimpleCORS()">Test Simple CORS</button>
+        <button onclick="testProfileEndpoint()">Test Profile Endpoint</button>
+        <button onclick="testPreflightCORS()">Test Preflight CORS</button>
+        <button onclick="testWithCredentials()">Test With Credentials</button>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+
+    <div class="container">
+        <h2>Debug Logs</h2>
+        <div id="logs"></div>
+    </div>
+
+    <div class="container">
+        <h2>Instructions</h2>
+        <ol>
+            <li>Open your browser's Developer Tools (F12)</li>
+            <li>Go to the Network tab</li>
+            <li>Click the test buttons above</li>
+            <li>Watch for failed requests (red status codes)</li>
+            <li>Check the Console tab for additional error messages</li>
+            <li>Look at the request/response headers in the Network tab</li>
+        </ol>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let logs = [];
+
+        function log(entry) {
+            logs.unshift(entry);
+            if (logs.length > 20) logs = logs.slice(0, 20);
+            updateLogDisplay();
+            console.log('CORS Debug:', entry);
+        }
+
+        function updateLogDisplay() {
+            const logsDiv = document.getElementById('logs');
+            logsDiv.innerHTML = logs.map(entry => {
+                const statusClass = `status-${Math.floor(entry.status / 100) * 100}`;
+                return `
+                    <div class="log-entry ${statusClass}">
+                        <strong>${entry.method} ${entry.url}</strong>
+                        <br>Status: ${entry.status} | Success: ${entry.success ? '✅' : '❌'}
+                        <br>Time: ${entry.timestamp}
+                        ${entry.error ? `<br><span class="error">Error: ${entry.error}</span>` : ''}
+                        <details>
+                            <summary>Headers (${Object.keys(entry.headers || {}).length})</summary>
+                            <pre>${JSON.stringify(entry.headers || {}, null, 2)}</pre>
+                        </details>
+                        ${entry.data ? `
+                            <details>
+                                <summary>Response Data</summary>
+                                <pre>${JSON.stringify(entry.data, null, 2)}</pre>
+                            </details>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function testRequest(url, options = {}) {
+            const entry = {
+                method: options.method || 'GET',
+                url,
+                timestamp: new Date().toLocaleTimeString(),
+                status: 0,
+                headers: {},
+                success: false
+            };
+
+            try {
+                const response = await fetch(url, {
+                    credentials: 'include',
+                    ...options
+                });
+
+                entry.status = response.status;
+                entry.success = response.ok;
+
+                // Collect headers
+                response.headers.forEach((value, key) => {
+                    entry.headers[key] = value;
+                });
+
+                try {
+                    entry.data = await response.json();
+                } catch (e) {
+                    entry.data = await response.text();
+                }
+
+            } catch (error) {
+                entry.error = error.message;
+                console.error('CORS test failed:', error);
+            }
+
+            log(entry);
+            return entry;
+        }
+
+        async function testSimpleCORS() {
+            await testRequest(`${API_URL}/api/auth/debug-cors/`);
+        }
+
+        async function testProfileEndpoint() {
+            await testRequest(`${API_URL}/api/auth/profile/`);
+        }
+
+        async function testPreflightCORS() {
+            await testRequest(`${API_URL}/api/auth/test-cors/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer test-token'
+                },
+                body: JSON.stringify({test: 'data'})
+            });
+        }
+
+        async function testWithCredentials() {
+            await testRequest(`${API_URL}/api/auth/test-cors/`, {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
+
+        async function runAllTests() {
+            console.log('🚀 Running all CORS tests...');
+            await testSimpleCORS();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testProfileEndpoint();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testPreflightCORS();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testWithCredentials();
+            console.log('✅ All tests completed');
+        }
+
+        function clearLogs() {
+            logs = [];
+            updateLogDisplay();
+            console.clear();
+        }
+
+        // Initialize network info
+        function updateNetworkInfo() {
+            const networkDetails = document.getElementById('network-details');
+            networkDetails.innerHTML = `
+                <p><strong>Origin:</strong> ${window.location.origin}</p>
+                <p><strong>Protocol:</strong> ${window.location.protocol}</p>
+                <p><strong>Hostname:</strong> ${window.location.hostname}</p>
+                <p><strong>Port:</strong> ${window.location.port || '(default)'}</p>
+                <p><strong>API URL:</strong> ${API_URL}</p>
+                <p><strong>Secure Context:</strong> ${window.isSecureContext ? 'Yes' : 'No'}</p>
+                <p><strong>User Agent:</strong> ${navigator.userAgent}</p>
+            `;
+        }
+
+        // Initialize
+        updateNetworkInfo();
+        
+        // Auto-run a simple test on load
+        setTimeout(() => {
+            console.log('🔍 Auto-running initial CORS test...');
+            testSimpleCORS();
+        }, 1000);
+    </script>
+</body>
+</html>

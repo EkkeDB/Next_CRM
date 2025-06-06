@@ -178,6 +178,13 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         profile, created = UserProfile.objects.get_or_create(user=self.request.user)
         return profile
 
+    def get(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({
+                'error': 'Authentication required'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        return super().get(request, *args, **kwargs)
+
     def update(self, request, *args, **kwargs):
         response = super().update(request, *args, **kwargs)
         log_audit_event(request, 'UPDATE', 'UserProfile', 
@@ -287,20 +294,94 @@ def delete_account(request):
     return response
 
 
-@api_view(['GET', 'OPTIONS'])
+@api_view(['GET', 'POST', 'OPTIONS'])
 @permission_classes([permissions.AllowAny])
 def test_cors(request):
-    """Test endpoint to verify CORS is working"""
-    response = JsonResponse({
-        'message': 'CORS test successful',
-        'method': request.method,
-        'origin': request.META.get('HTTP_ORIGIN', 'No origin header')
-    })
+    """Comprehensive CORS test endpoint with detailed debugging"""
+    import json
+    from django.conf import settings
     
-    # Manually add CORS headers for testing
-    response['Access-Control-Allow-Origin'] = '*'
-    response['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-    response['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    # Collect detailed request information
+    request_info = {
+        'method': request.method,
+        'path': request.path,
+        'full_path': request.get_full_path(),
+        'scheme': request.scheme,
+        'is_secure': request.is_secure(),
+        'headers': {},
+        'cookies': dict(request.COOKIES),
+        'user_authenticated': request.user.is_authenticated,
+        'user': str(request.user) if request.user.is_authenticated else 'Anonymous',
+    }
+    
+    # Collect all headers
+    for key, value in request.META.items():
+        if key.startswith('HTTP_'):
+            header_name = key[5:].replace('_', '-').title()
+            request_info['headers'][header_name] = value
+    
+    # Add some non-HTTP headers that are important
+    for key in ['CONTENT_TYPE', 'CONTENT_LENGTH', 'REQUEST_METHOD', 'QUERY_STRING']:
+        if key in request.META:
+            request_info['headers'][key] = request.META[key]
+    
+    # CORS configuration info
+    cors_info = {
+        'CORS_ALLOWED_ORIGINS': getattr(settings, 'CORS_ALLOWED_ORIGINS', []),
+        'CORS_ALLOW_ALL_ORIGINS': getattr(settings, 'CORS_ALLOW_ALL_ORIGINS', False),
+        'CORS_ALLOW_CREDENTIALS': getattr(settings, 'CORS_ALLOW_CREDENTIALS', False),
+        'CORS_ALLOW_HEADERS': getattr(settings, 'CORS_ALLOW_HEADERS', []),
+        'CORS_ALLOW_METHODS': getattr(settings, 'CORS_ALLOW_METHODS', []),
+    }
+    
+    # Environment info
+    env_info = {
+        'DEBUG': settings.DEBUG,
+        'ALLOWED_HOSTS': settings.ALLOWED_HOSTS,
+        'DJANGO_SETTINGS_MODULE': request.META.get('DJANGO_SETTINGS_MODULE', 'Not set'),
+    }
+    
+    # Create response data
+    response_data = {
+        'status': 'success',
+        'message': 'CORS debug test endpoint',
+        'timestamp': timezone.now().isoformat(),
+        'request_info': request_info,
+        'cors_config': cors_info,
+        'environment': env_info,
+        'debugging_tips': [
+            'Check browser network tab for actual headers sent/received',
+            'Look at the Origin header - it should match your frontend URL',
+            'Verify Access-Control-Allow-Origin header in response',
+            'For credentials: ensure CORS_ALLOW_CREDENTIALS=True and specific origins',
+            'Check for preflight OPTIONS requests before actual requests',
+        ]
+    }
+    
+    response = JsonResponse(response_data, json_dumps_params={'indent': 2})
+    
+    # Force CORS headers for debugging (should be redundant with middleware)
+    origin = request.META.get('HTTP_ORIGIN')
+    if origin:
+        response['Access-Control-Allow-Origin'] = origin
+    else:
+        response['Access-Control-Allow-Origin'] = '*'
+    
+    response['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-CSRFToken'
     response['Access-Control-Allow-Credentials'] = 'true'
+    response['Access-Control-Max-Age'] = '86400'
     
     return response
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def debug_cors_simple(request):
+    """Simple CORS test without authentication"""
+    return JsonResponse({
+        'message': 'Simple CORS test - no auth required',
+        'origin': request.META.get('HTTP_ORIGIN', 'No origin'),
+        'method': request.method,
+        'timestamp': timezone.now().isoformat(),
+    })

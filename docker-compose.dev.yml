@@ -48,7 +48,7 @@ services:
       - ./backend:/app
       - /app/venv  # Exclude virtual environment from bind mount
     ports:
-      - "8000:8000"
+      - "8001:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -67,8 +67,9 @@ services:
     container_name: nextcrm_frontend_dev
     environment:
       - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8001
       - NEXT_PUBLIC_APP_NAME=NextCRM
+      - API_URL=http://backend:8000
     volumes:
       - ./frontend:/app
       - /app/node_modules  # Exclude node_modules from bind mount

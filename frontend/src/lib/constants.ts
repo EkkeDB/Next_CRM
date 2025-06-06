@@ -3,34 +3,34 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000
 
 // API Endpoints
 export const API_ENDPOINTS = {
-  // Authentication
+  // Authentication (no trailing slashes to avoid CORS-breaking redirects)
   AUTH: {
-    LOGIN: '/api/auth/login/',
-    LOGOUT: '/api/auth/logout/',
-    REGISTER: '/api/auth/register/',
-    PROFILE: '/api/auth/profile/',
-    TOKEN_REFRESH: '/api/auth/token/refresh/',
-    PASSWORD_CHANGE: '/api/auth/password/change/',
-    GDPR_CONSENT: '/api/auth/gdpr/consent/',
-    USER_DATA_EXPORT: '/api/auth/gdpr/export/',
-    DELETE_ACCOUNT: '/api/auth/account/delete/',
+    LOGIN: '/api/auth/login',
+    LOGOUT: '/api/auth/logout',
+    REGISTER: '/api/auth/register',
+    PROFILE: '/api/auth/profile',
+    TOKEN_REFRESH: '/api/auth/token/refresh',
+    PASSWORD_CHANGE: '/api/auth/password/change',
+    GDPR_CONSENT: '/api/auth/gdpr/consent',
+    USER_DATA_EXPORT: '/api/auth/gdpr/export',
+    DELETE_ACCOUNT: '/api/auth/account/delete',
   },
   
-  // Core Business
+  // Core Business (no trailing slashes to avoid CORS-breaking redirects)
   NEXTCRM: {
-    CONTRACTS: '/api/nextcrm/contracts/',
-    COUNTERPARTIES: '/api/nextcrm/counterparties/',
-    COMMODITIES: '/api/nextcrm/commodities/',
-    TRADERS: '/api/nextcrm/traders/',
-    CURRENCIES: '/api/nextcrm/currencies/',
-    COST_CENTERS: '/api/nextcrm/cost-centers/',
-    SOCIEDADES: '/api/nextcrm/sociedades/',
-    COMMODITY_GROUPS: '/api/nextcrm/commodity-groups/',
-    COMMODITY_TYPES: '/api/nextcrm/commodity-types/',
-    EXCHANGE_RATES: '/api/nextcrm/exchange-rates/',
-    CONTRACT_AMENDMENTS: '/api/nextcrm/contract-amendments/',
-    SEARCH: '/api/nextcrm/search/',
-    DASHBOARD_STATS: '/api/nextcrm/contracts/dashboard_stats/',
+    CONTRACTS: '/api/nextcrm/contracts',
+    COUNTERPARTIES: '/api/nextcrm/counterparties',
+    COMMODITIES: '/api/nextcrm/commodities',
+    TRADERS: '/api/nextcrm/traders',
+    CURRENCIES: '/api/nextcrm/currencies',
+    COST_CENTERS: '/api/nextcrm/cost-centers',
+    SOCIEDADES: '/api/nextcrm/sociedades',
+    COMMODITY_GROUPS: '/api/nextcrm/commodity-groups',
+    COMMODITY_TYPES: '/api/nextcrm/commodity-types',
+    EXCHANGE_RATES: '/api/nextcrm/exchange-rates',
+    CONTRACT_AMENDMENTS: '/api/nextcrm/contract-amendments',
+    SEARCH: '/api/nextcrm/search',
+    DASHBOARD_STATS: '/api/nextcrm/contracts/dashboard_stats',
   },
 } as const
 

@@ -15,7 +15,9 @@
       "Bash(ss:*)",
       "Bash(sudo fuser:*)",
       "Bash(curl:*)",
-      "Bash(docker-compose down:*)"
+      "Bash(docker-compose down:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker-compose:*)"
     ],
     "deny": []
   }
