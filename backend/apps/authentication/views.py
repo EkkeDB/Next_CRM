@@ -411,3 +411,4 @@ def debug_cors_simple(request):
         'method': request.method,
         'timestamp': timezone.now().isoformat(),
     })
+

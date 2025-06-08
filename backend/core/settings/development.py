@@ -67,7 +67,7 @@ LOGGING = {
         },
         'django.request': {
             'handlers': ['console'],
-            'level': 'ERROR',  # Suppress 401/403 warnings
+            'level': 'INFO',  # Suppress 401/403 warnings
             'propagate': False,
         },
         'apps.authentication.debug_middleware': {

@@ -21,18 +21,18 @@ class JWTCookieMiddleware:
             try:
                 validated_token = jwt_auth.get_validated_token(access_token)
                 user = jwt_auth.get_user(validated_token)
+                logger.info(f"Authenticated user from JWT: {user.username}")
                 request.user = user
                 request.auth = validated_token
             except (InvalidToken, TokenError) as e:
-                logger.debug(f"Invalid JWT token: {e}")
+                logger.warning(f"JWT error: {e}")
                 request.user = AnonymousUser()
                 request.auth = None
         else:
+            logger.info("No access token found in cookies")
             request.user = AnonymousUser()
             request.auth = None
 
-        response = self.get_response(request)
-        return response
 
 
 class SecurityHeadersMiddleware:

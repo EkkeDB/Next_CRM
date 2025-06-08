@@ -1,0 +1,155 @@
+{
+  "name": "NextCRM Development",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "workspace",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Python/Django
+        "ms-python.python",
+        "ms-python.flake8",
+        "ms-python.black-formatter",
+        "ms-python.isort",
+        "ms-python.pylint",
+        "batisteo.vscode-django",
+        "ms-python.debugpy",
+        
+        // JavaScript/TypeScript/React
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-eslint",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        
+        // General Development
+        "ms-vscode.vscode-json",
+        "redhat.vscode-yaml",
+        "ms-vscode.vscode-docker",
+        "ms-azuretools.vscode-docker",
+        "eamodio.gitlens",
+        "github.copilot",
+        "github.copilot-chat",
+        
+        // Database
+        "ms-mssql.mssql",
+        "cweijan.vscode-postgresql-client2",
+        
+        // API Development
+        "humao.rest-client",
+        "42crunch.vscode-openapi",
+        
+        // Productivity
+        "gruntfuggly.todo-tree",
+        "alefragnani.bookmarks",
+        "ms-vscode.wordwrap"
+      ],
+      
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "python.defaultInterpreterPath": "/workspace/backend/venv/bin/python",
+        "python.terminal.activateEnvironment": true,
+        "python.formatting.provider": "black",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "python.linting.flake8Enabled": true,
+        "python.sortImports.args": ["--profile", "black"],
+        
+        "typescript.preferences.importModuleSpecifier": "relative",
+        "typescript.suggest.autoImports": true,
+        "typescript.updateImportsOnFileMove.enabled": "always",
+        
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.organizeImports": true,
+          "source.fixAll.eslint": true
+        },
+        
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.black-formatter",
+          "editor.formatOnSave": true
+        },
+        
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        
+        "[typescriptreact]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        
+        "files.exclude": {
+          "**/__pycache__": true,
+          "**/*.pyc": true,
+          "**/node_modules": true,
+          "**/.git": false,
+          "**/.DS_Store": true,
+          "**/venv": true,
+          "**/.env": true
+        },
+        
+        "search.exclude": {
+          "**/node_modules": true,
+          "**/venv": true,
+          "**/__pycache__": true
+        },
+        
+        "emmet.includeLanguages": {
+          "django-html": "html"
+        },
+        
+        "tailwindCSS.includeLanguages": {
+          "typescript": "typescript",
+          "typescriptreact": "typescriptreact"
+        }
+      }
+    }
+  },
+
+  "forwardPorts": [3000, 3001, 8000, 8001, 5432],
+  "portsAttributes": {
+    "3000": {
+      "label": "Frontend (Next.js)",
+      "onAutoForward": "notify"
+    },
+    "3001": {
+      "label": "Frontend Dev",
+      "onAutoForward": "notify"
+    },
+    "8000": {
+      "label": "Backend (Django)",
+      "onAutoForward": "notify"
+    },
+    "8001": {
+      "label": "Backend Dev",
+      "onAutoForward": "notify"
+    },
+    "5432": {
+      "label": "PostgreSQL",
+      "onAutoForward": "silent"
+    }
+  },
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "echo 'NextCRM Dev Container Started! 🚀'",
+
+  "remoteUser": "vscode"
+}
