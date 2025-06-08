@@ -17,7 +17,16 @@
       "Bash(curl:*)",
       "Bash(docker-compose down:*)",
       "Bash(docker-compose ps:*)",
-      "Bash(docker-compose:*)"
+      "Bash(docker-compose:*)",
+      "Bash(python:*)",
+      "Bash(ls:*)",
+      "Bash(rm:*)",
+      "Bash(docker restart:*)",
+      "Bash(docker exec:*)",
+      "Bash(chmod:*)",
+      "Bash(./run-frontend-local.sh:*)",
+      "Bash(bash run-frontend-local.sh)",
+      "Bash(pkill:*)"
     ],
     "deny": []
   }

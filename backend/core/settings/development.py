@@ -38,10 +38,16 @@ LOGGING = {
             'style': '{',
         },
     },
+    'filters': {
+        'auth_filter': {
+            '()': 'apps.authentication.log_filters.AuthenticationLogFilter',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'detailed',
+            'filters': ['auth_filter'],
         },
     },
     'root': {
@@ -51,10 +57,25 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'ERROR',  # Suppress INFO/WARNING from Django
+            'propagate': False,
+        },
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'ERROR',  # Suppress INFO/WARNING from Django server
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',  # Suppress 401/403 warnings
             'propagate': False,
         },
         'apps.authentication.debug_middleware': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'apps.authentication.log_filters': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,

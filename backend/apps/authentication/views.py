@@ -9,6 +9,7 @@ from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from django.contrib.auth.models import User
 from django.conf import settings
 from django.utils import timezone
+from django.core.cache import cache
 from .models import UserProfile, GDPRRecord, AuditLog
 from .serializers import (
     UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer,
@@ -18,6 +19,7 @@ from .utils import (
     get_client_ip, log_login_attempt, log_audit_event,
     set_jwt_cookies, clear_jwt_cookies
 )
+import time
 
 
 class RegisterView(generics.CreateAPIView):
@@ -129,12 +131,29 @@ class LogoutView(APIView):
 
 class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
+        client_ip = get_client_ip(request)
+        cache_key = f"refresh_circuit_breaker:{client_ip}"
+        
+        # Check circuit breaker
+        failure_count = cache.get(cache_key, 0)
+        if failure_count >= 5:  # After 5 failures, block for 5 minutes
+            cache.set(cache_key, failure_count, 300)  # 5 minutes
+            return Response({
+                'error': 'Too many failed refresh attempts. Please login again.',
+                'code': 'CIRCUIT_BREAKER_OPEN'
+            }, status=status.HTTP_429_TOO_MANY_REQUESTS)
+        
         refresh_token = request.COOKIES.get(settings.SIMPLE_JWT['REFRESH_COOKIE'])
         
         if not refresh_token:
-            return Response({
-                'error': 'Refresh token not found'
+            # Increment failure count
+            cache.set(cache_key, failure_count + 1, 300)
+            response = Response({
+                'error': 'Refresh token not found',
+                'code': 'NO_REFRESH_TOKEN'
             }, status=status.HTTP_401_UNAUTHORIZED)
+            clear_jwt_cookies(response)
+            return response
         
         request.data['refresh'] = refresh_token
         
@@ -142,6 +161,9 @@ class CustomTokenRefreshView(TokenRefreshView):
             response = super().post(request, *args, **kwargs)
             
             if response.status_code == 200:
+                # Reset circuit breaker on success
+                cache.delete(cache_key)
+                
                 access_token = response.data['access']
                 
                 # Create new response with token in cookie
@@ -163,8 +185,12 @@ class CustomTokenRefreshView(TokenRefreshView):
             return response
             
         except (TokenError, InvalidToken):
+            # Increment failure count
+            cache.set(cache_key, failure_count + 1, 300)
+            
             response = Response({
-                'error': 'Invalid refresh token'
+                'error': 'Invalid refresh token',
+                'code': 'INVALID_REFRESH_TOKEN'
             }, status=status.HTTP_401_UNAUTHORIZED)
             clear_jwt_cookies(response)
             return response

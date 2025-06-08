@@ -18,6 +18,11 @@ import type {
 
 class ApiClient {
   private instance: AxiosInstance
+  private isRefreshing: boolean = false
+  private failedQueue: Array<{
+    resolve: (value?: any) => void
+    reject: (error?: any) => void
+  }> = []
 
   constructor() {
     this.instance = axios.create({
@@ -49,23 +54,98 @@ class ApiClient {
         return response
       },
       async (error) => {
-        if (error.response?.status === 401) {
-          // Try to refresh token
+        const originalRequest = error.config
+        
+        // Handle circuit breaker responses (429)
+        if (error.response?.status === 429) {
+          console.warn('Circuit breaker active - authentication service temporarily unavailable')
+          this.redirectToLogin()
+          return Promise.reject(error)
+        }
+        
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          // Prevent infinite retry loops
+          originalRequest._retry = true
+          
+          // Skip refresh for refresh token endpoint itself
+          if (originalRequest.url?.includes('/token/refresh')) {
+            this.redirectToLogin()
+            return Promise.reject(error)
+          }
+          
+          // Skip refresh for profile endpoint if we don't have cookies
+          // This prevents infinite loops when checking auth status
+          if (originalRequest.url?.includes('/profile') && !this.hasCookies()) {
+            this.redirectToLogin()
+            return Promise.reject(error)
+          }
+          
+          if (this.isRefreshing) {
+            // If refresh is in progress, queue this request
+            return new Promise((resolve, reject) => {
+              this.failedQueue.push({ resolve, reject })
+            }).then(() => {
+              return this.instance(originalRequest)
+            }).catch(err => {
+              return Promise.reject(err)
+            })
+          }
+          
+          this.isRefreshing = true
+          
           try {
             await this.refreshToken()
+            this.processQueue(null)
+            this.isRefreshing = false
             // Retry the original request
-            return this.instance(error.config)
-          } catch (refreshError) {
-            // Refresh failed, redirect to login
-            if (typeof window !== 'undefined') {
-              window.location.href = '/login'
+            return this.instance(originalRequest)
+          } catch (refreshError: any) {
+            this.processQueue(refreshError)
+            this.isRefreshing = false
+            
+            // Check if it's a circuit breaker error
+            if (refreshError.response?.data?.code === 'CIRCUIT_BREAKER_OPEN') {
+              console.warn('Circuit breaker open - too many failed refresh attempts')
             }
+            
+            this.redirectToLogin()
             return Promise.reject(refreshError)
           }
         }
+        
         return Promise.reject(error)
       }
     )
+  }
+
+  private processQueue(error: any) {
+    this.failedQueue.forEach(({ resolve, reject }) => {
+      if (error) {
+        reject(error)
+      } else {
+        resolve()
+      }
+    })
+    
+    this.failedQueue = []
+  }
+
+  private hasCookies(): boolean {
+    if (typeof window === 'undefined') return false
+    
+    // Check if we have refresh token cookie
+    return document.cookie.includes('refresh_token=')
+  }
+
+  private redirectToLogin() {
+    if (typeof window !== 'undefined') {
+      // Clear any existing tokens/cookies
+      document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+      document.cookie = 'refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+      
+      // Redirect to login page
+      window.location.href = '/login'
+    }
   }
 
   // Generic request method

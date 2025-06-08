@@ -1,0 +1,6 @@
+# NextCRM - Commodity Trading CRM
+User-agent: *
+Disallow: /
+
+# This is an internal business application
+# No search engine indexing allowed
